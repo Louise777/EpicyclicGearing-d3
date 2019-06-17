@@ -1,0 +1,92 @@
+<html>
+<head>
+<meta charset="UTF-8"/>
+<script src="http://d3js.org/d3.v4.min.js"></script>
+</head>
+<body>
+<script>
+const radius = 45;         //最小齿轮的半径
+const toothRadius = 4;     //齿的半径
+const holeRadius = 10;     //中间的洞的半径
+const speed = 2;            //齿轮转动的速度
+
+const x = Math.sin(2*Math.PI/3);
+const y = Math.cos(2*Math.PI/3);
+
+var width = 500;
+var height = 500;
+
+
+var svg = d3.select("body")
+			.append("svg")
+			.attr("width",width)
+			.attr("height",height)
+			.append("g")
+			.attr("transform","translate("+width/2+","+height/2+")");
+
+//绘制
+var frame = svg.selectAll("g")
+			  .data([
+				{fill:"#c6dbef", teeth:80, radius:-radius*5, origin:[0,0], annulus:true},    //最外层齿轮
+				{fill:"#6baed6", teeth:16, radius:radius, origin:[0, 0]},                    //最中心的小齿轮
+				{fill:"#9ecae1", teeth:32, radius:-radius*2, origin:[0,-radius*3]},          //正上方的中等齿轮
+				{fill:"#9ecae1", teeth:32, radius:-radius*2, origin:[-radius*3*x, -radius*3*y]},  //左下角的中等齿轮
+				{fill:"#9ecae1", teeth:32, radius:-radius*2, origin:[radius*3*x,-radius*3*y]}      //右下角的中等齿轮
+				])
+			  .enter()
+			  .append("g")
+			  .attr("transform",d => "translate("+d.origin+")");
+			  
+var path = frame.append("path")
+				.attr("fill",d => d.fill)
+				.attr("stroke","black")
+				.attr("d",gear);
+
+//齿轮路径
+function gear({teeth,radius,annulus}){
+	const n = teeth;      //齿轮的齿数
+	let r2 = Math.abs(radius);
+	let r0 = r2 - toothRadius;
+	let r1 = r2 + toothRadius;
+	let r3 = holeRadius;
+	
+	if(annulus)
+		r3 = r0,r0 = r1,r1 = r3,r3 = r2+toothRadius*3;
+	
+	const da = Math.PI/n;
+	let a0 = -Math.PI/2 + (annulus? Math.PI/n:0);
+	
+	const path = ["M",r0*Math.cos(a0),",",r0*Math.sin(a0)];
+	let i = -1;
+	while(++i<n){
+		path.push(
+			"A", r0, ",", r0, " 0 0,1 ", r0 * Math.cos(a0 += da), ",", r0 * Math.sin(a0),
+			"L", r2 * Math.cos(a0), ",", r2 * Math.sin(a0),
+			"L", r1 * Math.cos(a0 += da / 3), ",", r1 * Math.sin(a0),
+			"A", r1, ",", r1, " 0 0,1 ", r1 * Math.cos(a0 += da / 3), ",", r1 * Math.sin(a0),
+			"L", r2 * Math.cos(a0 += da / 3), ",", r2 * Math.sin(a0),
+			"L", r0 * Math.cos(a0), ",", r0 * Math.sin(a0)
+		);
+	}
+	 path.push("M0,", -r3, "A", r3, ",", r3, " 0 0,0 0,", r3, "A", r3, ",", r3, " 0 0,0 0,", -r3, "Z");
+	 
+	 return path.join("");
+}
+
+//随时间旋转
+const start = Date.now();
+
+function rotate(){
+	const angle = (Date.now()-start)*speed;
+	path.transition()
+		.duration(100)
+		.attr("transform",d => "rotate("+angle/d.radius+")");
+}
+
+var timer = setInterval(rotate,100);
+
+</script>
+</body>
+
+
+</html>
